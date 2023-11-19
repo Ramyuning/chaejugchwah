@@ -21,14 +21,36 @@ class NurseSchedulingGA:
             self.population.append(schedule)
 
     def fitness(self, schedule):
+        # 초기화
         total_fitness = 0
-    # 각 간호사에 대해 평가
+        # (각 날짜의 선호도) * (근무하면 1 아님 0)
+        result = nurse_data.iloc[:,1:22].mul(schedule) ## 임의값
+        total_fitness += result.values.sum()
+        # 각 간호사 끼리의 선호도 고려 -> 단순곱
+        df_schedule = pd.DataFrame(schedule)
+        for i in range(20): ## 임의값
+            work_nurse_day = df_schedule.iloc[:,i]
+            pref = work_nurse_day.mul(nurse_data.iloc[:,22+i]) ## 임의값
+            total_fitness += pref.values.sum()
+            work_nurse_day.values.tolist()
+            
+    # 각 간호사에 대해 평가 패널티요소들
         for nurse_schedule in schedule:
-            # 근무 일수 만족도 반영하여
-            nurse_data.iloc[:,0:21]
-            # working_days = np.sum(nurse_schedule)
-            # total_fitness += working_days*5
-
+            # 쉬프트 수에 따른 패널티 요소
+            first_shift = 0
+            second_shift = 0
+            third_shift = 0
+            min_nightshift = 2 ##최소 밤에 일해야 하는 쉬프트
+            work_day = [index for index, value in enumerate(nurse_schedule) if value == 1]
+            for i in work_day:
+                if i // 3 == 0:
+                    first_shift += 1
+                elif i//3 == 1:
+                    second_shift += 1
+                else:
+                    third_shift += 1
+            if third_shift < min_nightshift:
+                total_fitness -= 30
             # 16시간 휴식 확인 이후 패널티
             # max_daily_hours = 8  # 하루 최대 근무 시간
             # min_rest_time = 2
@@ -37,7 +59,7 @@ class NurseSchedulingGA:
             #     total_fitness -= (daily_hours - max_daily_hours)
             
             # 21shift중 야간 쉬프트 최소 2회
-            min_shift = 2
+            
             
 
         return total_fitness
