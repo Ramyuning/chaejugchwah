@@ -108,9 +108,11 @@ class NurseSchedulingGA:
             best_schedule = self.population[np.argmax(fitness_scores)]
             best_fitness = self.fitness(best_schedule)
             print(f"Generation {generation + 1}, Best Fitness: {best_fitness}")
+        print(best_schedule)
 
 # 예제로 간호사 스케줄링 문제 해결
 num_nurses = 20
 num_days = 21
 ga = NurseSchedulingGA(num_nurses, num_days)
 ga.evolve(generations=50)
+
