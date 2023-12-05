@@ -1,6 +1,7 @@
-import time
-import pyautogui
+# import time
+# import pyautogui
 
-print(pyautogui.size())
-time.sleep(2)
-print(pyautogui.position())
+# print(pyautogui.size())
+# time.sleep(2)
+# print(pyautogui.position())
+

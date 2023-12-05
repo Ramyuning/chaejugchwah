@@ -47,7 +47,8 @@ for i in range(20): ## 임의값
     pref = work_nurse_day.mul(nurse_data.iloc[:,22+i]) ## 임의값
     total_fitness += pref.values.sum()
     work_nurse_day.values.tolist()
-    
+nurse_degree = nurse_data.loc[:,'Degree']
+print(nurse_degree)
 # 각 간호사에 대해 평가 패널티요소들
 for nurse_schedule in schedule:
     # 쉬프트 수에 따른 패널티 요소
