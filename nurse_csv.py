@@ -5,7 +5,7 @@ import random
 num_nurses = 40
 
 # Day, Pref, 직급 수
-num_days = 120
+num_days = 90
 num_prefs = 40  # 선호도를 20개로 늘림 간호사 수와 동일하도록 설정해주세요
 num_ranks = 3  # A, B, C 세 개의 직급
 
@@ -52,8 +52,6 @@ def generate_rank(rank_counts):
             #통과
     return rank_list
 
-
-
 # 무작위 데이터 생성
 data = []
 ranks = ['A', 'B', 'C']
@@ -77,7 +75,6 @@ for i, nurse in enumerate(nurses):
         preferences.append(preference)
     preferences[i] = 0  # 자기자신의 선호도를 0으로 설정
     row.extend(preferences)
-
     # 직급 데이터 생성
     # rank = generate_rank(rank_counts) 
     rank = rank_list[i]

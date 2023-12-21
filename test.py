@@ -2,11 +2,12 @@ import numpy as np
 import pandas as pd
 population = []
 for i in range(3):
-    schedule = np.random.randint(2, size=(20 , 21))
+    schedule = np.random.randint(2, size=(40 , 90))
     population.append(schedule)
 # print(population)
 # print(schedule)
 # asdf = pd.DataFrame(schedule)
+# print(asdf.iloc[:,1])
 # print(asdf)
 # print(asdf.iloc[:,2].values.tolist())
 
@@ -36,42 +37,64 @@ nurse_data = pd.read_csv('/Users/jojeonghyeon/Documents/WorkSpace/PYTHON/chaejug
 # p
 # total_fitness += np.sum(ndt.iloc[:,0:21]*schedule)
 
-total_fitness = 0
-# (각 날짜의 선호도) * (근무하면 1 아님 0)
-result = nurse_data.iloc[:,1:22].mul(schedule) ## 임의값
-total_fitness += result.values.sum()
-# 각 간호사 끼리의 선호도 고려 -> 단순곱
+
+# 이거 수정좀 할래요!
+# total_fitness = 0
+# # (각 날짜의 선호도) * (근무하면 1 아님 0)
+# result = nurse_data.iloc[:,1:22].mul(schedule) ## 임의값
+# total_fitness += result.values.sum()
+# # 각 간호사 끼리의 선호도 고려 -> 단순곱
+result = nurse_data.iloc[:,1:1+90].mul(schedule)
+pref_list = []
 df_schedule = pd.DataFrame(schedule)
-for i in range(20): ## 임의값
-    work_nurse_day = df_schedule.iloc[:,i]
-    pref = work_nurse_day.mul(nurse_data.iloc[:,22+i]) ## 임의값
-    total_fitness += pref.values.sum()
-    work_nurse_day.values.tolist()
-nurse_degree = nurse_data.loc[:,'Degree']
-print(nurse_degree)
-# 각 간호사에 대해 평가 패널티요소들
-for nurse_schedule in schedule:
-    # 쉬프트 수에 따른 패널티 요소
-    first_shift = 0
-    second_shift = 0
-    third_shift = 0
-    min_nightshift = 2 ##최소 밤에 일해야 하는 쉬프트
-    work_day = [index for index, value in enumerate(nurse_schedule) if value == 1]
-    for i in work_day:
-        if i // 3 == 0:
-            first_shift += 1
-        elif i//3 == 1:
-            second_shift += 1
-        else:
-            third_shift += 1
-    if third_shift < min_nightshift:
-        total_fitness -= 30
-    # 16시간 휴식 확인 이후 패널티
-    # max_daily_hours = 8  # 하루 최대 근무 시간
-    # min_rest_time = 2
-    # daily_hours = np.sum(nurse_schedule)
-    # if daily_hours > max_daily_hours:
-    #     total_fitness -= (daily_hours - max_daily_hours)
+for i in range(40):
+    pref = nurse_data.iloc[:,91+i].dot(df_schedule)
+    # print(pref.values)
+    pref_list.append(pref.values)
+# print(pref_list.Dataframe())
+pref_df = pd.DataFrame(pref_list)
+# print(pref_df)
+# print(result)
+print(pref_df.shape)
+print(result.shape)
+print(result.values)
+# total_fit = pref_df.iloc[:,:].mul(result)
+total_fit = pref_df * result.values
+# total_fit = pref_df.mul(result)
+# print(total_fit)
+# print(df_schedule.iloc[:,1])
+# total_fit = result.mul(pref_df)
+print(total_fit)
+# # for i in range(20): ## 임의값
+# #     work_nurse_day = df_schedule.iloc[:,i]
+# #     pref = work_nurse_day.mul(nurse_data.iloc[:,22+i]) ## 임의값
+# #     total_fitness += pref.values.sum()
+# #     work_nurse_day.values.tolist()
+# nurse_degree = nurse_data.loc[:,'Degree']
+# print(nurse_degree)
+# # 각 간호사에 대해 평가 패널티요소들
+# for nurse_schedule in schedule:
+#     # 쉬프트 수에 따른 패널티 요소
+#     first_shift = 0
+#     second_shift = 0
+#     third_shift = 0
+#     min_nightshift = 2 ##최소 밤에 일해야 하는 쉬프트
+#     work_day = [index for index, value in enumerate(nurse_schedule) if value == 1]
+#     for i in work_day:
+#         if i // 3 == 0:
+#             first_shift += 1
+#         elif i//3 == 1:
+#             second_shift += 1
+#         else:
+#             third_shift += 1
+#     if third_shift < min_nightshift:
+#         total_fitness -= 30
+#     # 16시간 휴식 확인 이후 패널티
+#     # max_daily_hours = 8  # 하루 최대 근무 시간
+#     # min_rest_time = 2
+#     # daily_hours = np.sum(nurse_schedule)
+#     # if daily_hours > max_daily_hours:
+#     #     total_fitness -= (daily_hours - max_daily_hours)
     
-    # 21shift중 야간 쉬프트 최소 2회
-print(total_fitness)
+#     # 21shift중 야간 쉬프트 최소 2회
+# print(total_fitness)

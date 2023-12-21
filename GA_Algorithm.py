@@ -12,7 +12,7 @@ bf = []
 # 간호사 스케줄링 문제를 해결하는 Genetic Algorithm 클래스
 best_schedule_result = []
 class NurseSchedulingGA:
-    def __init__(self, num_nurses, num_days, mutation_rate=0.1, population_size=5):
+    def __init__(self, num_nurses, num_days, mutation_rate=0.1, population_size=50):
         self.num_nurses = num_nurses
         self.num_days = num_days
         self.mutation_rate = mutation_rate
@@ -28,31 +28,19 @@ class NurseSchedulingGA:
         # 초기화
         total_fitness = 0
         # (각 날짜의 선호도) * (근무하면 1 아님 0)
-        # print(schedule.shape)
         result = nurse_data.iloc[:,1:1+num_days].mul(schedule)
-        # print(result.iloc[1,:])
-        # print(result.shape)
-        total_fitness += result.values.sum()
+        # total_fitness += result.values.sum()
         # 각 간호사 끼리의 선호도 고려 -> 단순곱
         df_schedule = pd.DataFrame(schedule)
         ## 이부분 해결필요 Degree 사용
         pref_list = []
-        nurse_degree = nurse_data.loc[:,'Degree']
-        for i in range(num_nurses): ## 임의값
-            work_nurse_day = df_schedule.iloc[:,i]
-            # print(work_nurse_day)
-            pref = work_nurse_day.mul(nurse_data.iloc[:,1+num_days+i]) ## 임의값
-            asdf = pref.tolist()
-            # print(pref.shape)
-            pref_list.append(asdf)
-            total_fitness += pref.values.sum()
-            # work_nurse_day_list = work_nurse_day.values.tolist()
-        # print(len(pref_list[0]))
-        
-        # for i in range(num_nurses):
-        #     for j in range(num_days):
-        #         total_fitness += (pd.DataFrame(pref_list)*result.iloc[i,j]).sum()
-
+        # nurse_degree = nurse_data.loc[:,'Degree']
+        for i in range(40):
+            pref = nurse_data.iloc[:,91+i].dot(df_schedule)
+            pref_list.append(pref.values/num_days)
+        pref_df = pd.DataFrame(pref_list)
+        total_fit = pref_df * result.values
+        total_fitness = total_fit.values.sum()
     # 각 간호사에 대해 평가 패널티요소들
         for nurse_schedule in schedule:
             # 쉬프트 수에 따른 패널티 요소
@@ -68,14 +56,13 @@ class NurseSchedulingGA:
                 else:
                     third_shift += 1
             if third_shift < min_nightshift:
-                total_fitness -= 30
+                total_fitness -= 20
             # 16시간 휴식 확인 이후 패널티
             # max_daily_hours = 8  # 하루 최대 근무 시간
             # min_rest_time = 2
             # daily_hours = np.sum(nurse_schedule)
             # if daily_hours > max_daily_hours:
             #     total_fitness -= (daily_hours - max_daily_hours)
-            
             # 21shift중 야간 쉬프트 최소 2회
         # Degree 평가요소들
         
@@ -189,10 +176,10 @@ class NurseSchedulingGA:
 
 # 예제로 간호사 스케줄링 문제 해결
 num_nurses = 40
-num_days = 120
+num_days = 90
 plt.show()
 ga = NurseSchedulingGA(num_nurses, num_days)
-ga.evolve(generations=3)
+ga.evolve(generations=20)
 plt.show()
 print("베스트 스코어 리스트입니다! \n{}".format(bf))
 # print("베스트 스코어를 달성한 거 \n{}".format(best_schedule))
