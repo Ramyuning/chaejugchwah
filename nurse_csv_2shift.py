@@ -5,14 +5,14 @@ import random
 num_nurses = 40
 
 # Day, Pref, 직급 수
-num_days = 90
+num_days = 60
 num_prefs = 40  # 선호도를 20개로 늘림 간호사 수와 동일하도록 설정해주세요
 num_ranks = 3  # A, B, C 세 개의 직급
 
-# 각 직급의 최소 개수 서울대병원 2:5:13실제로
-min_a_count = num_nurses*0.1
-min_b_count = num_nurses*0.25
-min_c_count = num_nurses*0.65
+# 각 직급의 최소 개수
+min_a_count = 3
+min_b_count = 3
+min_c_count = 5
 
 # 간호사 목록 생성
 nurses = [f"Nurse {i+1}" for i in range(num_nurses)]
@@ -28,12 +28,12 @@ def generate_rank(rank_counts):
         rank_list = []
         for _ in range(num_nurses):
             rank_prob = random.random()
-            if rank_prob < 0.65:
-                rank = 'C'
-            elif rank_prob < 0.9:
+            if rank_prob < 0.5:
                 rank = 'B'
-            else:
+            elif rank_prob < 0.75:
                 rank = 'A'
+            else:
+                rank = 'C'
             rank_list.append(rank)
             rank_counts[rank] += 1
             # if rank_counts[rank] < min_count:
@@ -92,4 +92,4 @@ columns.extend(["Degree"])
 df = pd.DataFrame(data, columns=columns)
 
 # CSV 파일로 저장
-df.to_csv("./chaejugchwah/nurse_schedule.csv", index=False)
+df.to_csv("./chaejugchwah/nurse_schedule2.csv", index=False)

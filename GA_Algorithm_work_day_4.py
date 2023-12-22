@@ -12,7 +12,7 @@ bf = []
 # 간호사 스케줄링 문제를 해결하는 Genetic Algorithm 클래스
 best_schedule_result = []
 class NurseSchedulingGA:
-    def __init__(self, num_nurses, num_days, mutation_rate=0.1, population_size=50):
+    def __init__(self, num_nurses, num_days, mutation_rate=0.1, population_size=10):
         self.num_nurses = num_nurses
         self.num_days = num_days
         self.mutation_rate = mutation_rate
@@ -21,18 +21,48 @@ class NurseSchedulingGA:
 
     def initialize_population(self):
         for _ in range(self.population_size):
-            schedule = np.random.randint(2, size=(self.num_nurses, self.num_days))
-            self.population.append(schedule)
+            while True:
+                schedule = np.random.randint(2, size=(self.num_nurses, self.num_days))
+                
+                # Check hard constraints
+                if not self.check_nurse_constraints(schedule) or not self.check_day_constraints(schedule):
+                    continue  # If constraints are not met, regenerate the schedule
+                else:
+                    break  # If constraints are met, exit the loop
 
-    def fitness(self, schedule, min_nightshift = 2):
+            self.population.append(schedule)
+            # schedule = np.random.randint(2, size=(self.num_nurses, self.num_days))
+            # self.population.append(schedule)
+    #하드 제약조건 주 4일제
+    def check_nurse_constraints(self, schedule):
+        subset_size = 14 #이쪽에 스케쥴 Np니까 그거 제대로 조정하는 절차 필요할듯함
+        for nurse_schedule in schedule:    
+            for i in range(5):
+                subset_start = i * subset_size
+                subset_end = (i + 1) * subset_size
+                if sum(nurse_schedule[subset_start:subset_end]) > 4: #이거 이상하다 한번 고쳐주는 시간이 필요할듯함
+                    return False 
+            return True
+    #하드제약조건 최소 간호사 수
+    def check_day_constraints(self, schedule):
+        for i in range(self.num_days): #왜 self.num_days로 했는지 모르겠음
+            if schedule[:, i].sum() < day_data.iloc[i, 1]: 
+                return False
+        return True
+    
+    
+    def fitness(self, schedule, min_nightshift = 5):
         # 초기화
         total_fitness = 0
         df_schedule = pd.DataFrame(schedule)
-        #하드 제약사항
+        ###하드 제약사항
+        
         for i in range(num_days):
         # 최소 간호사 수 평가요소
             if df_schedule.iloc[:,i].values.sum() < day_data.iloc[i,1]:
-                continue #하드젱략조건
+                total_fitness-=100
+                break #하드젱략조건
+            # 주 4일제 사용
             #Degree 최소 요건
             # else:
             #     work_nurse = [index for index, value in enumerate(df_schedule.iloc[:,i]) if value == 1]
@@ -41,7 +71,9 @@ class NurseSchedulingGA:
             #     # print(Work_Degree_list)
             #     Work_Degree_nums = {"A" : Work_Degree_list.count("A"), "B" : Work_Degree_list.count("B"), "C" : Work_Degree_list.count("C")}
             #     print(Work_Degree_nums)
+        ### 하드 제약사향
         
+        ### 소프트 제약사항 ###
         # (각 날짜의 선호도) * (근무하면 1 아님 0)
         result = nurse_data.iloc[:,1:1+num_days].mul(schedule)
         # 각 간호사 끼리의 선호도 고려 -> 단순곱
@@ -70,7 +102,7 @@ class NurseSchedulingGA:
                 else:
                     consecutive_count = 1
                 # Apply penalty if consecutive occurrences are three or more
-                if consecutive_count >= 3:
+                if consecutive_count >= 2:
                     total_fitness -= 5
 
             for i in work_day:
@@ -82,6 +114,19 @@ class NurseSchedulingGA:
                     third_shift += 1
             if third_shift < min_nightshift:
                 total_fitness -= 10
+            # print(sum(nurse_schedule[0:num_days//4]))
+            # print(num_days//4)
+            # print(len(nurse_schedule))
+            if sum(nurse_schedule[0:14]) > 4 :
+                total_fitness -= 100
+            if sum(nurse_schedule[14:14*2]) > 4 :
+                total_fitness -= 100
+            if sum(nurse_schedule[14*2:14*3]) > 4 :
+                total_fitness -= 100
+            if sum(nurse_schedule[14*3:14*4]) > 4 :
+                total_fitness -= 100
+            if sum(nurse_schedule[14*4:]) > 4 :
+                total_fitness -= 100
             
             # 16시간 휴식 확인 이후 패널티
             # max_daily_hours = 8  # 하루 최대 근무 시간
@@ -142,12 +187,7 @@ class NurseSchedulingGA:
             # print("{} 번째 제네레이션 시작".format(generation+1))
             # print(len(self.population))
             # 평가 및 선택
-            fitness_scores = [self.fitness(schedule) for schedule in self.population]
-            # print(fitness_scores)
-            # print(np.argsort(fitness_scores))
-            # selected_indices = np.argsort(fitness_scores)[-self.population_size // 2:] ## 이쪽 수정이 필요할듯 룰렛룰로 선택하도록 현재는 50% 이상인 것들을 선택해서 가져오는 방식을 취하는중 현재 룰렛룰로 대체완료
-            # print(selected_indices)
-            # selected_population = [self.population[i] for i in selected_indices]
+            fitness_scores = [self.fitness(schedule) for schedule in self.population] 
             selected_population = []
             
             # print(len(selected_population))
@@ -211,17 +251,17 @@ class NurseSchedulingGA:
 
 # 예제로 간호사 스케줄링 문제 해결
 num_nurses = 40
-num_days = 90
+num_days = 60
 plt.show()
 ga = NurseSchedulingGA(num_nurses, num_days)
-ga.evolve(generations=30)
+ga.evolve(generations=3)
 plt.show()
 print("베스트 스코어 리스트입니다! \n{}".format(bf))
 
 # print("베스트 스코어를 달성한 거 \n{}".format(best_schedule))
 # df_bf = pd.DataFrame(bf)
 # scaler = MinMaxScaler()
+# plt.show()
 # b =scaler.fit_transform(df_bf)
 # print(b)
 # plt.plot(bf)
-# plt.show()
