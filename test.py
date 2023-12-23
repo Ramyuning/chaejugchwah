@@ -64,7 +64,8 @@ total_fit = pref_df * result.values
 # print(total_fit)
 # print(df_schedule.iloc[:,1])
 # total_fit = result.mul(pref_df)
-print(total_fit)
+# print(total_fit)
+print(np.argwhere(schedule ==1)[1])
 # # for i in range(20): ## 임의값
 # #     work_nurse_day = df_schedule.iloc[:,i]
 # #     pref = work_nurse_day.mul(nurse_data.iloc[:,22+i]) ## 임의값

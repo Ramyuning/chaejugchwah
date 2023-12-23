@@ -27,9 +27,8 @@ class NurseSchedulingGA:
                     continue  # If constraints are not met, regenerate the schedule
                 else:
                     break  # If constraints are met, exit the loop
-
             self.population.append(schedule)
-    
+
     ### 이건 3Shift제도에서 필요없는 함수
     # def check_nurse_constraints(self, schedule):
     #     subset_size = 21 #이쪽에 스케쥴 Np니까 그거 제대로 조정하는 절차 필요할듯함
@@ -48,11 +47,19 @@ class NurseSchedulingGA:
             if schedule[:, i].sum() < day_data.iloc[i, 1]: 
                 return False
         return True
-    
+    # def check_nurse_constraints(self, schedule):
+    #     subset_size = self.num_days // 5
+    #     for i in range(5):
+    #         subset_start = i * subset_size
+    #         subset_end = (i + 1) * subset_size
+    #         if sum(schedule[:, subset_start:subset_end].flatten()) > 4:
+    #             return False
+    #     return True
     def fitness(self, schedule, min_nightshift = 2):
         # 초기화
         total_fitness = 0
         df_schedule = pd.DataFrame(schedule)
+        
 
         
         # (각 날짜의 선호도) * (근무하면 1 아님 0)
@@ -68,16 +75,16 @@ class NurseSchedulingGA:
         total_fit = pref_df * result.values
         total_fitness = total_fit.values.sum()
         
-        for i in range(num_days):
-            # Degree 최소 요건
-            work_nurse = [index for index, value in enumerate(df_schedule.iloc[:,i]) if value == 1]
-            # print(work_nurse)
-            Work_Degree_list = nurse_data.iloc[work_nurse,-1].values.tolist()
-            # print(Work_Degree_list)
-            Work_Degree_dict = {"A" : Work_Degree_list.count("A"), "B" : Work_Degree_list.count("B"), "C" : Work_Degree_list.count("C")}
-            total_fitness -= Work_Degree_dict["A"]*0.5
-            total_fitness -= Work_Degree_dict["B"]*0.3
-            total_fitness -= Work_Degree_dict["C"]*0.1
+        # for i in range(num_days):
+        #     # Degree 최소 요건
+        #     work_nurse = [index for index, value in enumerate(df_schedule.iloc[:,i]) if value == 1]
+        #     # print(work_nurse)
+        #     Work_Degree_list = nurse_data.iloc[work_nurse,-1].values.tolist()
+        #     # print(Work_Degree_list)
+        #     Work_Degree_dict = {"A" : Work_Degree_list.count("A"), "B" : Work_Degree_list.count("B"), "C" : Work_Degree_list.count("C")}
+        #     total_cost += Work_Degree_dict["A"]*10000
+        #     total_cost += Work_Degree_dict["B"]*100
+        #     total_cost += Work_Degree_dict["C"]*1
         
     # 각 간호사에 대해 평가 패널티요소들 간호사 1,2,3,4,... 으로 올라가면서 work_day 에서 일을하는 index값 반환함
         for nurse_schedule in schedule:
@@ -232,8 +239,21 @@ class NurseSchedulingGA:
             plt.cla()
             plt.plot(bf)
             plt.pause(0.1)
+        total_cost = 0
+        for i in range(num_days):
+            # Degree 최소 요건
+            work_nurse = [index for index, value in enumerate(best_schedule[:,i]) if value == 1]
+            # print(work_nurse)
+            Work_Degree_list = nurse_data.iloc[work_nurse,-1].values.tolist()
+            # print(Work_Degree_list)
+            Work_Degree_dict = {"A" : Work_Degree_list.count("A"), "B" : Work_Degree_list.count("B"), "C" : Work_Degree_list.count("C")}
+            total_cost += Work_Degree_dict["A"]*1000000
+            total_cost += Work_Degree_dict["B"]*1000
+            total_cost += Work_Degree_dict["C"]*1
         print("베스트 스케쥴입니다!")
         print(best_schedule)
+        print("토탈 코스트입니다!")
+        print(total_cost)
         best_schedule = pd.DataFrame(best_schedule)
         best_schedule.to_csv("./chaejugchwah/3Shiftresult.csv", index=False)
 
@@ -243,7 +263,7 @@ num_nurses = 40
 num_days = 90
 plt.show()
 ga = NurseSchedulingGA(num_nurses, num_days)
-ga.evolve(generations=20)
+ga.evolve(generations=30)
 plt.show()
 print("베스트 스코어 리스트입니다! \n{}".format(bf))
 
