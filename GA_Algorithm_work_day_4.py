@@ -6,13 +6,14 @@ import pandas as pd
 
 
 
-day_data = pd.read_csv('./chaejugchwah/output.csv')
-nurse_data = pd.read_csv('./chaejugchwah/nurse_schedule.csv')
+day_data = pd.read_csv('./chaejugchwah/output2.csv')
+nurse_data = pd.read_csv('./chaejugchwah/nurse_schedule2.csv')
 bf = []
+
 # 간호사 스케줄링 문제를 해결하는 Genetic Algorithm 클래스
 best_schedule_result = []
 class NurseSchedulingGA:
-    def __init__(self, num_nurses, num_days, mutation_rate=0.1, population_size=10):
+    def __init__(self, num_nurses, num_days, mutation_rate=0.1, population_size=50):
         self.num_nurses = num_nurses
         self.num_days = num_days
         self.mutation_rate = mutation_rate
@@ -23,9 +24,8 @@ class NurseSchedulingGA:
         for _ in range(self.population_size):
             while True:
                 schedule = np.random.randint(2, size=(self.num_nurses, self.num_days))
-                
                 # Check hard constraints
-                if not self.check_nurse_constraints(schedule) or not self.check_day_constraints(schedule):
+                if not self.check_day_constraints(schedule):
                     continue  # If constraints are not met, regenerate the schedule
                 else:
                     break  # If constraints are met, exit the loop
@@ -33,16 +33,20 @@ class NurseSchedulingGA:
             self.population.append(schedule)
             # schedule = np.random.randint(2, size=(self.num_nurses, self.num_days))
             # self.population.append(schedule)
+    
+    
     #하드 제약조건 주 4일제
     def check_nurse_constraints(self, schedule):
         subset_size = 14 #이쪽에 스케쥴 Np니까 그거 제대로 조정하는 절차 필요할듯함
         for nurse_schedule in schedule:    
-            for i in range(5):
+            for i in range(4): #num_days // 4 -1
                 subset_start = i * subset_size
                 subset_end = (i + 1) * subset_size
                 if sum(nurse_schedule[subset_start:subset_end]) > 4: #이거 이상하다 한번 고쳐주는 시간이 필요할듯함
-                    return False 
-            return True
+                    total_fitness -= 3
+            if sum(nurse_schedule[14*4:]) >4:
+                total_fitness -= 3
+
     #하드제약조건 최소 간호사 수
     def check_day_constraints(self, schedule):
         for i in range(self.num_days): #왜 self.num_days로 했는지 모르겠음
@@ -57,11 +61,11 @@ class NurseSchedulingGA:
         df_schedule = pd.DataFrame(schedule)
         ###하드 제약사항
         
-        for i in range(num_days):
-        # 최소 간호사 수 평가요소
-            if df_schedule.iloc[:,i].values.sum() < day_data.iloc[i,1]:
-                total_fitness-=100
-                break #하드젱략조건
+        # for i in range(num_days):
+        # # 최소 간호사 수 평가요소
+        #     if df_schedule.iloc[:,i].values.sum() < day_data.iloc[i,1]:
+        #         total_fitness-=100
+        #         break #하드젱략조건
             # 주 4일제 사용
             #Degree 최소 요건
             # else:
@@ -84,9 +88,9 @@ class NurseSchedulingGA:
             pref = nurse_data.iloc[:,num_days+1+i].dot(df_schedule)
             pref_list.append(pref.values/num_days)
         pref_df = pd.DataFrame(pref_list)
-        total_fit = pref_df * result.values
+        total_fit = pref_df * result.values * 1.5
         total_fitness = total_fit.values.sum()
-        
+        self.check_day_constraints(schedule)
         
     # 각 간호사에 대해 평가 패널티요소들 간호사 1,2,3,4,... 으로 올라가면서 work_day 에서 일을하는 index값 반환함
         for nurse_schedule in schedule:
@@ -103,7 +107,8 @@ class NurseSchedulingGA:
                     consecutive_count = 1
                 # Apply penalty if consecutive occurrences are three or more
                 if consecutive_count >= 2:
-                    total_fitness -= 5
+                    total_fitness -= 3
+                    consecutive_count = 1
 
             for i in work_day:
                 if i // 3 == 0:
@@ -113,20 +118,21 @@ class NurseSchedulingGA:
                 else:
                     third_shift += 1
             if third_shift < min_nightshift:
-                total_fitness -= 10
+                total_fitness -= 7
+            
             # print(sum(nurse_schedule[0:num_days//4]))
             # print(num_days//4)
             # print(len(nurse_schedule))
-            if sum(nurse_schedule[0:14]) > 4 :
-                total_fitness -= 100
-            if sum(nurse_schedule[14:14*2]) > 4 :
-                total_fitness -= 100
-            if sum(nurse_schedule[14*2:14*3]) > 4 :
-                total_fitness -= 100
-            if sum(nurse_schedule[14*3:14*4]) > 4 :
-                total_fitness -= 100
-            if sum(nurse_schedule[14*4:]) > 4 :
-                total_fitness -= 100
+            # if sum(nurse_schedule[0:14]) > 4 :
+            #     total_fitness -= 100
+            # if sum(nurse_schedule[14:14*2]) > 4 :
+            #     total_fitness -= 100
+            # if sum(nurse_schedule[14*2:14*3]) > 4 :
+            #     total_fitness -= 100
+            # if sum(nurse_schedule[14*3:14*4]) > 4 :
+            #     total_fitness -= 100
+            # if sum(nurse_schedule[14*4:]) > 4 :
+            #     total_fitness -= 100
             
             # 16시간 휴식 확인 이후 패널티
             # max_daily_hours = 8  # 하루 최대 근무 시간
@@ -170,8 +176,20 @@ class NurseSchedulingGA:
         crossover_point = random.randint(1, self.num_days - 1)
         child1 = np.hstack((parent1[:, :crossover_point], parent2[:, crossover_point:]))
         child2 = np.hstack((parent2[:, :crossover_point], parent1[:, crossover_point:]))
+        
+        child1 = self.apply_hard_constraints(child1)
+        child2 = self.apply_hard_constraints(child2)
+        
         return child1, child2
-
+    
+    def apply_hard_constraints(self, schedule):
+        # Apply your hard constraints here
+        # For example, use the check_nurse_constraints and check_day_constraints functions
+        while not self.check_day_constraints(schedule):
+            # Regenerate the schedule until it satisfies the constraints
+            schedule = np.random.randint(2, size=(self.num_nurses, self.num_days))
+        return schedule
+    
     def mutate(self, schedule):
         # 돌연변이 연산을 수행하는 부분입니다.
         for i in range(self.num_nurses):
@@ -247,6 +265,8 @@ class NurseSchedulingGA:
             plt.pause(0.1)
         print("베스트 스케쥴입니다!")
         print(best_schedule)
+        best_schedule = pd.DataFrame(best_schedule)
+        best_schedule.to_csv("./chaejugchwah/Week4result.csv", index=False)
 
 
 # 예제로 간호사 스케줄링 문제 해결
@@ -254,7 +274,7 @@ num_nurses = 40
 num_days = 60
 plt.show()
 ga = NurseSchedulingGA(num_nurses, num_days)
-ga.evolve(generations=3)
+ga.evolve(generations=10)
 plt.show()
 print("베스트 스코어 리스트입니다! \n{}".format(bf))
 

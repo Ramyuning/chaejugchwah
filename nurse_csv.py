@@ -58,11 +58,43 @@ ranks = ['A', 'B', 'C']
 rank_counts = {'A': 0, 'B': 0, 'C': 0}
 rank_list = generate_rank(rank_counts)
 print(rank_list)
+
 for i, nurse in enumerate(nurses):
     row = [nurse]
-    
+        # 밤 선호도 랜덤 데이터 생성
+    one_shift_preferences = []
+    two_shift_preferences = []
+    night_preferences = []
+    nurse_prob = random.random()
+    if nurse_prob >=0.781:
+        for _ in range(num_days//3):
+            one_shift_pref = random.choice([1,2,3,4,5])
+            two_shift_pref = random.choice([1,2,3,4,5])
+            night_pref_prob = random.random()
+            if night_pref_prob >= 0.85:
+                night_preference = 5
+            elif night_pref_prob<= 0.7:
+                night_preference = 4 
+            else :
+                night_preference = random.choice([1,2,3])
+            night_preferences.append(night_preference)
+            one_shift_preferences.append(one_shift_pref)
+            two_shift_preferences.append(two_shift_pref)
+    else:
+        for _ in range(num_days//3):
+            one_shift_pref = random.choice([1,2,3,4,5])
+            two_shift_pref = random.choice([1,2,3,4,5])
+            night_preference = random.choice([1,2,3,4,5])
+            
+            night_preferences.append(night_preference)
+            one_shift_preferences.append(one_shift_pref)
+            two_shift_preferences.append(two_shift_pref)
+    for shift_number in range(num_days//3):    
+        row.extend([one_shift_preferences[ shift_number]])
+        row.extend([two_shift_preferences[ shift_number]])
+        row.extend([night_preferences[ shift_number]])
     # 무작위 Day 데이터 생성 이부분 5에 대한 선호도가 높도록 수정 필요함!!
-    row.extend([random.randint(1, 5) for _ in range(num_days)])
+    # row.extend([random.randint(1, 5) for _ in range(num_days)])
     
     # 선호도 데이터 생성
     preferences = []
@@ -81,6 +113,7 @@ for i, nurse in enumerate(nurses):
     row.extend([rank])
     data.append(row)
     # print(data)
+
 
 # 컬럼명 생성
 columns = ["Nurse"]
