@@ -5,7 +5,7 @@ import random
 num_nurses = 40
 
 # Day, Pref, 직급 수
-num_days = 60
+num_days = 14
 num_prefs = 40  # 선호도를 20개로 늘림 간호사 수와 동일하도록 설정해주세요
 num_ranks = 3  # A, B, C 세 개의 직급
 

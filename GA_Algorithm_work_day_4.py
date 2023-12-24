@@ -12,7 +12,7 @@ bf = []
 
 # 간호사 스케줄링 문제를 해결하는 Genetic Algorithm 클래스
 class NurseSchedulingGA:
-    def __init__(self, num_nurses, num_days, mutation_rate=0.1, population_size=10):
+    def __init__(self, num_nurses, num_days, mutation_rate=0.0, population_size=50):
         self.num_nurses = num_nurses
         self.num_days = num_days
         self.mutation_rate = mutation_rate
@@ -22,12 +22,21 @@ class NurseSchedulingGA:
     def initialize_population(self):
         for _ in range(self.population_size):
             while True:
-                schedule = np.random.randint(2, size=(self.num_nurses, self.num_days))
+                schedule = np.zeros((num_nurses, num_days), dtype=int)
+
+                # Set 4 working days for each nurse
+                for i in range(num_nurses):
+                    working_days = np.random.choice(num_days, size=4, replace=False)
+                    schedule[i, working_days] = 1
+                schedule = self.repair_minimum_rest(schedule)
+                    
+                # schedule = np.random.randint(2, size=(self.num_nurses, self.num_days))
+                # schedule = self.repair_minimum_rest(schedule)
                 # Check hard constraints
-                if not self.check_nurse_constraints or not self.check_day_constraints(schedule):
+                if not self.check_nurse_constraints(schedule) or not self.check_day_constraints(schedule):
                     continue  # If constraints are not met, regenerate the schedule
                 else:
-                    schedule = self.repair_minimum_rest(schedule)
+                    # schedule = self.repair_minimum_rest(schedule)
                     break  # If constraints are met, exit the loop
             self.population.append(schedule)
             # schedule = np.random.randint(2, size=(self.num_nurses, self.num_days))
@@ -39,52 +48,64 @@ class NurseSchedulingGA:
     
     #하드 제약조건 주 4일제
     def check_nurse_constraints(self, schedule):
-        subset_size = 14 #이쪽에 스케쥴 Np니까 그거 제대로 조정하는 절차 필요할듯함
+        # subset_size = 14 #이쪽에 스케쥴 Np니까 그거 제대로 조정하는 절차 필요할듯함
         for nurse_schedule in schedule:
-            for i in range(4): #num_days // 4 -1
-                subset_start = i * subset_size
-                subset_end = (i + 1) * subset_size
-                if sum(nurse_schedule[subset_start:subset_end]) > 4: #이거 이상하다 한번 고쳐주는 시간이 필요할듯함
-                    return False
-            if sum(nurse_schedule[14*4:]) >4:
+            # print(sum(nurse_schedule[:]))
+            if sum(nurse_schedule[:]) > 4:
                 return False
+            # for i in range(4): #num_days // 4 -1
+            #     subset_start = i * subset_size
+            #     subset_end = (i + 1) * subset_size
+            #     if sum(nurse_schedule[subset_start:subset_end]) > 4: #이거 이상하다 한번 고쳐주는 시간이 필요할듯함
+            #         return False
+            # if sum(nurse_schedule[14*4:]) >4:
+            #     return False
         return True
     
-    def repair_minimum_rest(self, schedule): # 이 리페어킷 다시 생각해봐야할듯
+    # def repair_minimum_rest(self, schedule): # 이 리페어킷 다시 생각해봐야할듯
+    #     for i, nurse_schedule in enumerate(schedule):
+    #         work_day = [index for index, value in enumerate(nurse_schedule) if value == 1]
+    #         # consecutive_count = 1
+    #         for j in range(1, len(work_day)):
+    #             while True :
+    #                 if work_day[j] - work_day[j - 1] == 1:
+    #                     schedule[i, work_day[j]] = 0
+                        
+    #                 else:
+    #                     break
+    #     return schedule
+    
+    def repair_minimum_rest(self, schedule):
         for i, nurse_schedule in enumerate(schedule):
-            work_day = [index for index, value in enumerate(nurse_schedule) if value == 1]
-            consecutive_count = 1
-            for j in range(1, len(work_day)):
-                if work_day[j] - work_day[j - 1] == 1:
-                    consecutive_count += 1
-                else:
-                    consecutive_count = 1
-                # Apply penalty if consecutive occurrences are two or more
-                if consecutive_count >= 2:
-                    # Set the value to 0 to break the consecutive occurrences
-                    # return False
-                    schedule[i, work_day[j]] = 0
-                    consecutive_count = 0
-        return schedule
-        # return True
-        # for nurse_schedule in schedule:
-        #     work_day = [index for index, value in enumerate(nurse_schedule) if value == 1]
-        #     consecutive_count = 1
-        #     for i in range(1, len(work_day)):
-        #         if work_day[i] - work_day[i - 1] == 1:
-        #             consecutive_count += 1
-        #         else:
-        #             consecutive_count = 1
-        #         # Apply penalty if consecutive occurrences are three or more
-        #         if consecutive_count >= 2:
-        #             #여길 0으로 만듬
-        #             schedule[i, work_day[j]] = 0
-        #             consecutive_count = 1
+            work_day_indices = [index for index, value in enumerate(nurse_schedule) if value == 1]
 
+            for j in range(1, len(work_day_indices)):
+                while work_day_indices[j] - work_day_indices[j - 1] == 1:
+                    # If consecutive 1s are found, set the second day to rest
+                    removed_index = work_day_indices[j]
+                    schedule[i, removed_index] = 0
+
+                    # Find a new index to insert a 1
+                    new_index = self.find_new_index(schedule[i])
+
+                    # Insert a 1 in the new index
+                    schedule[i, new_index] = 1
+
+                    # Update work_day_indices
+                    work_day_indices = [index for index, value in enumerate(schedule[i]) if value == 1]
+
+        return schedule
+    
+    def find_new_index(self, nurse_schedule):
+        # Find an index where a 1 can be inserted
+        rest_day_indices = [index for index, value in enumerate(nurse_schedule) if value == 0]
+        return np.random.choice(rest_day_indices)
 
     #하드제약조건 최소 간호사 수
     def check_day_constraints(self, schedule):
         for i in range(self.num_days):
+            # print(schedule[:,i].sum(), "에요~")
+            # print(day_data.iloc[i, 1], "헤요~")
             if schedule[:, i].sum() < day_data.iloc[i, 1]: 
                 return False
         return True
@@ -134,9 +155,9 @@ class NurseSchedulingGA:
             Work_Degree_list = nurse_data.iloc[work_nurse,-1].values.tolist()
             # print(Work_Degree_list)
             Work_Degree_dict = {"A" : Work_Degree_list.count("A"), "B" : Work_Degree_list.count("B"), "C" : Work_Degree_list.count("C")}
-            total_fitness -= Work_Degree_dict["A"]*0.5
-            total_fitness -= Work_Degree_dict["B"]*0.3
-            total_fitness -= Work_Degree_dict["C"]*0.1
+            total_fitness -= Work_Degree_dict["A"]*2
+            total_fitness -= Work_Degree_dict["B"]*1
+            total_fitness -= Work_Degree_dict["C"]*0.5
         
     # 각 간호사에 대해 평가 패널티요소들 간호사 1,2,3,4,... 으로 올라가면서 work_day 에서 일을하는 index값 반환함
         for nurse_schedule in schedule:
@@ -145,16 +166,16 @@ class NurseSchedulingGA:
             second_shift = 0
             third_shift = 0
             work_day = [index for index, value in enumerate(nurse_schedule) if value == 1]
-            consecutive_count = 1
-            for i in range(1, len(work_day)):
-                if work_day[i] - work_day[i - 1] == 1:
-                    consecutive_count += 1
-                else:
-                    consecutive_count = 1
-                # Apply penalty if consecutive occurrences are three or more
-                if consecutive_count >= 2:
-                    total_fitness -= 2
-                    consecutive_count = 1
+            # consecutive_count = 1
+            # for i in range(1, len(work_day)):
+            #     if work_day[i] - work_day[i - 1] == 1:
+            #         consecutive_count += 1
+            #     else:
+            #         consecutive_count = 1
+            #     # Apply penalty if consecutive occurrences are three or more
+            #     if consecutive_count >= 2:
+            #         total_fitness -= 2
+            #         consecutive_count = 1
 
             for i in work_day:
                 if i // 2 == 0:
@@ -224,13 +245,13 @@ class NurseSchedulingGA:
 
 
         # Apply hard constraints to the children
-        child1_boolean = self.apply_hard_constraints(child1)
-        child2_boolean = self.apply_hard_constraints(child2)
+        child1_boolean,child1 = self.apply_hard_constraints(child1)
+        child2_boolean,child2 = self.apply_hard_constraints(child2)
         # print(type(child1_boolean))
         # print(child1_boolean)
         # print(child2_boolean)
         
-        if (child1_boolean or child2_boolean) == False:
+        if child1_boolean == False or child2_boolean == False:
             print("여길 지나갑니다")
             return parent1, parent2
         else:
@@ -242,44 +263,32 @@ class NurseSchedulingGA:
 
         # return child1, child2
     
-    # def crossovvvver(self, parent1, parent2):
-    #     # 교차 연산을 수행하는 부분입니다. # 이쪽부분을 다시한번 생각해주는식으로 가기
-    #     crossover_point = random.randint(1, self.num_days - 1)
-        
-    #     # child1 = np.copy(parent1)
-    #     # child2 = np.copy(parent2)
-        
-    #     child1 = np.hstack((parent1[:, :crossover_point], parent2[:, crossover_point:]))
-    #     child2 = np.hstack((parent2[:, :crossover_point], parent1[:, crossover_point:]))
-        
-    #     child1_boolean = self.apply_hard_constraints(child1)
-    #     child2_boolean = self.apply_hard_constraints(child2)
-    #     if child1_boolean or child2_boolean == True:
-    #         return parent1, parent2
-    #     else:
-    #         return child1, child2
-    
-    
     def apply_hard_constraints(self, schedule):
+        child = self.repair_minimum_rest(schedule)
         # Apply your hard constraints here
-        if not self.check_nurse_constraints:
-            return False
-        elif not self.check_day_constraints:
-            return False
+        if not self.check_nurse_constraints(schedule):
+            return False, child
+        elif not self.check_day_constraints(schedule):
+            return False, child
         # elif not self.repair_minimum_rest: # 이거 수정
         #     return False
+        else:
+            # child = self.repair_minimum_rest(schedule)
+            return True ,child
         # For example, use the check_nurse_constraints and check_day_constraints functions
         # while not self.check_nurse_constraints or not self.check_day_constraints(schedule):
             # Regenerate the schedule until it satisfies the constraints
             # schedule = np.random.randint(2, size=(self.num_nurses, self.num_days))
-        return True
+        
     
     def mutate(self, schedule):
         # 돌연변이 연산을 수행하는 부분입니다.
+        old_schedule = schedule.copy
         for i in range(self.num_nurses):
             for j in range(self.num_days):
                 if random.uniform(0, 1) < self.mutation_rate:
                     schedule[i, j] = 1 - schedule[i, j]
+        bool, schedule = self.apply_hard_constraints(schedule)
         return schedule
 
     def evolve(self, generations, elitism_rate=0.05):
@@ -304,7 +313,6 @@ class NurseSchedulingGA:
             # 엘리트 선택 이쪽부분에서 population size가 커지는 문제점 발견됨. 수정 필요함 후에 100개로 조정하는 식으로 가져가도 괜춘할듯 ㅇㅇ 뭐여 수정했는데 95개로 작아짐;
             num_elite = int(self.population_size * elitism_rate)
             elite_indices = np.argsort(fitness_scores)[-num_elite:]
-            print("저는 엘리트 사이를 기어다닐 거에요")
             elite_population = [self.population[i] for i in elite_indices]
             # print(len(elite_population))
 
@@ -369,10 +377,10 @@ class NurseSchedulingGA:
 
 # 예제로 간호사 스케줄링 문제 해결
 num_nurses = 40
-num_days = 60
+num_days = 14
 plt.show()
 ga = NurseSchedulingGA(num_nurses, num_days)
-ga.evolve(generations=10)
+ga.evolve(generations=30)
 plt.show()
 print("베스트 스코어 리스트입니다! \n{}".format(bf))
 
